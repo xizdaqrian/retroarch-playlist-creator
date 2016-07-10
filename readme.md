@@ -14,7 +14,13 @@ Read the script for more info.
 Invoke the script with: 
 
 ```ra-playlist.sh -h``` to get a help screen.
+
+
 ```ra-playlist.sh -c``` to get a list of installed cores
+
+
 ```ra-playlist.sh -p``` to get a list of existing playlists
+
+
 ```ra-playlist.sh [no arguments]``` to create a playlist for the system(s) you've setup in the script.
 
