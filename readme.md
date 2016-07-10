@@ -21,6 +21,11 @@ Invoke the script with:
 
 ```ra-playlist.sh -p``` to get a list of existing playlists
 
+```ra-playlist.sh -s``` to search available playlist names for a particular system.
+Playlists must be named a certain way. Fortunately, retroarch's crew assigned the 
+same names to the icons that represent them. This function parses those icon names,
+and presents them for you to use.
+
 
 ```ra-playlist.sh [no arguments]``` to create a playlist for the system(s) you've setup in the script.
 

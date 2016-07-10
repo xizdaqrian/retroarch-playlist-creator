@@ -152,7 +152,20 @@ create_playlist(){
         echo "Values entered into:\n${OUTPUT_FILE}"
     done
 
-    }
+}
+
+search_playlist_names(){
+    PNG_FOLDER="${RA_DIR}/assets/xmb/monochrome/png"
+    SEARCH_TERM="${1}"
+
+    #echo "PNG_FOLDER = ${PNG_FOLDER}"
+    #echo "SEARCH_TERM = $SEARCH_TERM"
+    echo "$( find "${PNG_FOLDER}" -iname "${SEARCH_TERM}*" ! -iname "${SEARCH_TERM}*-content.png" \
+        -exec basename "{}" .png \; )"
+
+    exit
+}
+
 show_banner(){
     echo  " ============================================"
     echo  "|      xizdaqrian's shell port of:           |"
@@ -180,13 +193,15 @@ show_cores(){
 
 show_help(){
 cat <<End-of-message
-    USAGE: ra-playlist.sh [-c] [-h] [-p]
+    USAGE: ra-playlist.sh [-c] [-h] [-p] [-s SYSTEM ]
     If you see this help message, then please
     open and edit the script.
 
     -c: List installed cores
     -h: Display this help
     -p: List existing playlists
+    -s: Search for playlist names by SYSTEM
+        (ex. ra-playlist.sh -s Nintendo )
 End-of-message
     exit 0
 }
@@ -210,12 +225,13 @@ show_playlists(){
 
 ### Main
 show_banner
-while getopts chp option
+while getopts chps: option
 do
     case "${option}" in
         c) show_cores ;;
         h) show_help ;;
         p) show_playlists ;;
+        s) search_playlist_names "${OPTARG}" ;;
     esac
 done
 
