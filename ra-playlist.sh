@@ -1,8 +1,8 @@
 #!/bin/bash
 ###############################################################################
 # ra-playlist.sh
-# version 0.5
-# Jul-09-2016
+# version 0.7
+# Jul-10-2016
 # ~by~ Rodney Fisk
 # xizdaqrian@gmail.com
 # https://github.com/xizdaqrian/retroarch-playlist-creator
@@ -10,8 +10,153 @@
 #
 #    Xizdaqrian's
 #    shell mod of:
-#     Shifty's RetroArch Playlist Script
+#    Shifty's RetroArch Playlist Script
 #
+###############################################################################
+
+#------------------------------------------------------------------------------
+# Playlist requires a CRC, so we just make it zero
+declare -r CRC="000000|CRC"
+
+create_playlist(){
+
+    COUNTER=0
+    # Arrays always start to count elements from 0.
+    # This runs from 0 to the number of elements in the array,
+    ## which is the number of configs above.
+    while [ "$COUNTER" -lt ${#SYS_NAMES[@]} ]; do
+        TARG_FILE="$RA_DIR/Playlists/${SYS_NAMES[$COUNTER]}.lpl"
+        BACKUP_FILE="$RA_DIR/Playlists/${SYS_NAMES[$COUNTER]}.backup"
+
+        # Backup if we find a file already in place.
+        if [ -f "$TARG_FILE" ]; then
+            echo -e "${TARG_FILE} exists... backing up\n"
+            sleep 2
+            mv -v "${TARG_FILE}" "${BACKUP_FILE}"
+        fi
+
+        echo "Writing values for: ${SYS_NAMES[$COUNTER]}"
+        OUTPUT_FILE="${RA_DIR}"/Playlists/"${SYS_NAMES[$COUNTER]}".lpl
+        for ROM_FILE in ${SYS_ROM_DIRS[$COUNTER]}/*${SYS_EXTENSIONS[$COUNTER]}; do
+            #echo "${ROM_FILE}" 
+            #echo "$( basename "$ROM_FILE" ${SYS_ROM_EXTENSIONS[$COUNTER]} )"
+            #echo "${SYS_ROM_EXTENSIONS[$COUNTER]}"
+            #echo "$RA_DIR"/Cores/"${SYS_CORES[$COUNTER]}"
+            #echo "${SYS_NAMES[$COUNTER]}"
+            #echo "${CRC}"
+            #echo "${SYS_NAMES[$COUNTER]}".lpl
+            echo "$ROM_FILE" >> "${OUTPUT_FILE}"
+            echo "$( basename "$ROM_FILE" ${SYS_ROM_EXTENSIONS[$COUNTER]} )" >> "${OUTPUT_FILE}"
+            echo "${RA_DIR}"/Cores/"${SYS_CORES[$COUNTER]}" >> "${OUTPUT_FILE}"
+            echo "${SYS_NAMES[$COUNTER]}" >> "${OUTPUT_FILE}"
+            echo "${CRC}" >> "${OUTPUT_FILE}"
+            echo "${SYS_NAMES[$COUNTER]}".lpl >> "${OUTPUT_FILE}"
+        done
+        COUNTER+=1
+        echo "Values entered into:\n${OUTPUT_FILE}"
+    done
+
+}
+
+read_config(){
+    if [ -f ./.ra-playlist.cfg ]; then
+        source ./.ra-playlist.cfg
+    else
+        show_help
+    fi
+}
+
+search_playlist_names(){
+    PNG_FOLDER="${RA_DIR}/assets/xmb/monochrome/png"
+    SEARCH_TERM="$( echo "${1}" | tr 'a-z' 'A-Z' )"
+
+    #echo "PNG_FOLDER = ${PNG_FOLDER}"
+    #echo "SEARCH_TERM = $SEARCH_TERM"
+    echo "$( find "${PNG_FOLDER}" -name "${SEARCH_TERM}*" ! -iname "${SEARCH_TERM}*-content.png" \
+        -exec basename "{}" .png \; )"
+
+    exit
+}
+
+show_banner(){
+    echo  " ============================================"
+    echo  "|      xizdaqrian's shell port of:           |"
+    echo  "|      Shifty's RetroArch Playlist Script    |"
+    echo  " ============================================"
+}
+
+show_cores(){
+    echo " ============================================"
+    echo "|            Installed Cores:                |"
+    echo " ============================================"
+
+    if [ "$RA_DIR" != "" ]; then
+        for core in "$RA_DIR"/Cores/*.dll; do
+            echo "$( basename "$core")"
+        done
+        exit 0
+    else
+        echo "No path specified for Retroarch"
+        echo -e "Please read the script for more information\n"
+        show_help
+    fi
+}
+
+
+show_help(){
+cat <<End-of-message
+    USAGE: ra-playlist.sh [-c] [-h] [-p] [-s SYSTEM ]
+    If you see this help message, then please
+    open and edit the config file named .ra-playlist.cfg
+
+    -c: List installed cores
+    -h: Display this help
+    -p: List existing playlists
+    -s: Search for playlist names by SYSTEM
+        (ex. ra-playlist.sh -s Nintendo )
+End-of-message
+    exit 0
+}
+
+show_playlists(){
+    echo " ============================================"
+    echo "|          Configured Playlists:             |"
+    echo " ============================================"
+
+    if [ "$RA_DIR" != "" ]; then
+        for playlist in "$RA_DIR"/Playlists/*.lpl; do
+            echo "$( basename "$playlist")"
+        done
+        exit 0
+    else
+        echo "No path specified for Retroarch"
+        echo -e "Please read the script for more information\n"
+        show_help
+    fi
+}
+
+### Main
+#show_banner
+if [[ $# -eq 0 ]]; then
+    show_help
+fi
+
+read_config
+
+while getopts chmps: option
+do
+    case "${option}" in
+        c) show_cores ;;
+        h) show_help ;;
+        m) create_playlist ;;
+        p) show_playlists ;;
+        s) search_playlist_names "${OPTARG}" ;;
+    esac
+done
+
+
+
+
 ###############################################################################
 # Some useful URL's regarding the issue
 # https://www.reddit.com/r/RetroArch/comments/43dj1n/playlist_creator_for_retroarch_on_windows/
@@ -83,160 +228,3 @@
 #  CoreNames[2]=Genesis Plus GX
 #  PlaylistNames[2]=Sega - Master System - Mark III
 #  SupportedExtensions[2]=*.sms *.bin
-
-# Change these to point to your RetroArch and top-level ROM directories
-#------------------------------------------------------------------------------
-
-# Base path to retroArch - -r==readonly
-declare -r RA_DIR="/cygdrive/c/Games/Emulation/Arcade/retroarch/RetroArch-v1.3.0-x86_64-Windows"
-
-# MaMe
-#SYS_NAMES[0]="MaMe"
-#SYS_CORES[0]="mame2014_libretro.dll"
-#SYS_ROM_DIRS[0]="/cygdrive/c/Games/Emulation/Arcade/Roms/Mame_0.161_ROMs/Keepers"
-#SYS_ROM_EXTENSIONS[0]=".zip"
-
-#------------------------------------------------------------------------------
-# You can safely ignore everything below here.
-#------------------------------------------------------------------------------
-
-# Playlist requires a CRC, so we just make it zero
-declare -r CRC="00000000|CRC"
-
-check_info(){
-    # if the array 'sys_names' is 0 length, then exit with error
-    ## this just checks to see if the above config has been filled in.
-    if [ -z "${SYS_NAMES[@]}" ]; then
-        echo "No Systems are setup..."
-        echo -e "Please read the script for more information\n"
-        show_help
-        exit 1
-    fi
-}
-
-create_playlist(){
-
-    COUNTER=0
-    # Arrays always start to count elements from 0.
-    # This runs from 0 to the number of elements in the array,
-    ## which is the number of configs above.
-    while [ "$COUNTER" -lt ${#SYS_NAMES[@]} ]; do
-        TARG_FILE="$RA_DIR/Playlists/${SYS_NAMES[$COUNTER]}.lpl"
-        BACKUP_FILE="$RA_DIR/Playlists/${SYS_NAMES[$COUNTER]}.backup"
-
-        # Backup if we find a file already in place.
-        if [ -f "$TARG_FILE" ]; then
-            echo -e "${TARG_FILE} exists... backing up\n"
-            sleep 2
-            mv -v "${TARG_FILE}" "${BACKUP_FILE}"
-        fi
-
-        echo "Writing values for: ${SYS_NAMES[$COUNTER]}"
-        OUTPUT_FILE="${RA_DIR}"/Playlists/"${SYS_NAMES[$COUNTER]}".lpl
-        for ROM_FILE in ${SYS_ROM_DIRS[$COUNTER]}/*${SYS_EXTENSIONS[$COUNTER]}; do
-            #echo "${ROM_FILE}" 
-            #echo "$( basename "$ROM_FILE" ${SYS_ROM_EXTENSIONS[$COUNTER]} )"
-            #echo "${SYS_ROM_EXTENSIONS[$COUNTER]}"
-            #echo "$RA_DIR"/Cores/"${SYS_CORES[$COUNTER]}"
-            #echo "${SYS_NAMES[$COUNTER]}"
-            #echo "${CRC}"
-            #echo "${SYS_NAMES[$COUNTER]}".lpl
-            echo "$ROM_FILE" >> "${OUTPUT_FILE}"
-            echo "$( basename "$ROM_FILE" ${SYS_ROM_EXTENSIONS[$COUNTER]} )" >> "${OUTPUT_FILE}"
-            echo "${RA_DIR}"/Cores/"${SYS_CORES[$COUNTER]}" >> "${OUTPUT_FILE}"
-            echo "${SYS_NAMES[$COUNTER]}" >> "${OUTPUT_FILE}"
-            echo "${CRC}" >> "${OUTPUT_FILE}"
-            echo "${SYS_NAMES[$COUNTER]}".lpl >> "${OUTPUT_FILE}"
-        done
-        COUNTER+=1
-        echo "Values entered into:\n${OUTPUT_FILE}"
-    done
-
-}
-
-search_playlist_names(){
-    PNG_FOLDER="${RA_DIR}/assets/xmb/monochrome/png"
-    SEARCH_TERM="${1}"
-
-    #echo "PNG_FOLDER = ${PNG_FOLDER}"
-    #echo "SEARCH_TERM = $SEARCH_TERM"
-    echo "$( find "${PNG_FOLDER}" -iname "${SEARCH_TERM}*" ! -iname "${SEARCH_TERM}*-content.png" \
-        -exec basename "{}" .png \; )"
-
-    exit
-}
-
-show_banner(){
-    echo  " ============================================"
-    echo  "|      xizdaqrian's shell port of:           |"
-    echo  "|      Shifty's RetroArch Playlist Script    |"
-    echo  " ============================================"
-}
-
-show_cores(){
-    echo " ============================================"
-    echo "|            Installed Cores:                |"
-    echo " ============================================"
-
-    if [ "$RA_DIR" != "" ]; then
-        for core in "$RA_DIR"/Cores/*.dll; do
-            echo "$( basename "$core")"
-        done
-        exit 0
-    else
-        echo "No path specified for Retroarch"
-        echo -e "Please read the script for more information\n"
-        show_help
-    fi
-}
-
-
-show_help(){
-cat <<End-of-message
-    USAGE: ra-playlist.sh [-c] [-h] [-p] [-s SYSTEM ]
-    If you see this help message, then please
-    open and edit the script.
-
-    -c: List installed cores
-    -h: Display this help
-    -p: List existing playlists
-    -s: Search for playlist names by SYSTEM
-        (ex. ra-playlist.sh -s Nintendo )
-End-of-message
-    exit 0
-}
-
-show_playlists(){
-    echo " ============================================"
-    echo "|          Configured Playlists:             |"
-    echo " ============================================"
-
-    if [ "$RA_DIR" != "" ]; then
-        for playlist in "$RA_DIR"/Playlists/*.lpl; do
-            echo "$( basename "$playlist")"
-        done
-        exit 0
-    else
-        echo "No path specified for Retroarch"
-        echo -e "Please read the script for more information\n"
-        show_help
-    fi
-}
-
-### Main
-show_banner
-while getopts chps: option
-do
-    case "${option}" in
-        c) show_cores ;;
-        h) show_help ;;
-        p) show_playlists ;;
-        s) search_playlist_names "${OPTARG}" ;;
-    esac
-done
-
-#show_banner
-check_info
-create_playlist
-#show_cores
-#show_playlists
